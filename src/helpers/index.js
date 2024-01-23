@@ -26,12 +26,12 @@ export function interpolateProps(value, props) {
 }
 
 export function formatCSSBlocks(css, className) {
-  const subBlocksRegex = /&[^{]+{[^}]*}/g;
+  const subBlocksRegex = /(?:^\s*|\n\s*)([.&][^{]+{\s*[^}]*})/gm;
   const mainBlock = css.replace(subBlocksRegex, '').trim();
 
   const subBlocks = (css.match(subBlocksRegex) || [])
     .join('\n')
-    .replaceAll('&', '.' + className)
+    .replaceAll('&', `.${className}`)
     .trim();
 
   return `.${className} { ${mainBlock} }\n${subBlocks}`;
