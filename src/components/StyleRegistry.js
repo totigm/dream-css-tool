@@ -17,13 +17,12 @@ const sortFn = (a, b) => {
     // Sort by the number of classes in ascending order.
     return aClassCount - bClassCount;
   }
-}
+};
 
 function StyleRegistry({ children }) {
   const collectedStyles = cache();
   const stylesMap = React.useMemo(
-    () =>
-      collectedStyles.sort(sortFn).map(({ className, css }) => `.${className} { ${css} }`),
+    () => collectedStyles.sort(sortFn).map(({ css }) => css),
     [collectedStyles]
   );
 
