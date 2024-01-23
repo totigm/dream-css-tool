@@ -40,10 +40,13 @@ const styled = new Proxy(
           ''
         );
 
-        const matchedStyle = findExistingStyle(
-          collectedStyles,
-          interpolatedCSS
-        );
+        const {
+          styles: finalCSS,
+          mainBlock,
+          subBlocks,
+        } = formatCSSBlocks(interpolatedCSS, generatedClassName);
+
+        const matchedStyle = findExistingStyle(collectedStyles, mainBlock, Tag);
 
         const hasParentComponent = typeof Tag === 'function';
 
@@ -68,14 +71,18 @@ const styled = new Proxy(
           return <Tag className={className} {...props} />;
         }
 
-        const finalCSS = formatCSSBlocks(interpolatedCSS, generatedClassName);
-
         collectedStyles.push({
           fullClassName,
           className: generatedClassName,
           props: restProps,
           css: finalCSS,
         });
+
+        if (subBlocks) {
+          collectedStyles.push({
+            css: subBlocks,
+          });
+        }
 
         return <Tag className={fullClassName} {...props} />;
       };

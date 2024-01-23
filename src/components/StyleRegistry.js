@@ -7,8 +7,8 @@ export const cache = React.cache(() => {
 });
 
 const sortFn = (a, b) => {
-  const aClassCount = a.fullClassName.split(' ').length;
-  const bClassCount = b.fullClassName.split(' ').length;
+  const aClassCount = a.fullClassName?.split(' ').length;
+  const bClassCount = b.fullClassName?.split(' ').length;
 
   if (aClassCount === bClassCount) {
     // If they have the same class count, maintain the original order.

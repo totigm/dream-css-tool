@@ -20,12 +20,13 @@ export function formatCSSBlocks(css, className) {
   const subBlocksRegex = /(?:^\s*|\n\s*)([.&][^{]+{\s*[^}]*})/gm;
   const mainBlock = css.replace(subBlocksRegex, '').trim();
 
-  const subBlocks = (css.match(subBlocksRegex) || [])
-    .join('\n')
-    .replaceAll('&', `.${className}`)
-    .trim();
+  const subBlocks = css.match(subBlocksRegex) || [];
 
-  return `.${className} { ${mainBlock} }\n${subBlocks}`
+  return {
+    mainBlock,
+    subBlocks: subBlocks.join('\n').replaceAll('&', `.${className}`).trim(),
+    styles: `.${className} { ${mainBlock} }`,
+  };
 }
 
 function normalizeCSS(css) {
