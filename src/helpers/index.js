@@ -1,16 +1,7 @@
 export function removeCSSComments(templateStringsArray) {
-  const blockCommentRegex = /\/\*[\s\S]*?\*\//g;
-  const lineCommentRegex = /\/\/.*/g;
-  const leadingTrailingNewLineRegex = /^\n+|\n+$/g;
-
-  const cleanedArray = templateStringsArray.map((element) =>
-    element
-      .replace(blockCommentRegex, '')
-      .replace(lineCommentRegex, '')
-      .replace(leadingTrailingNewLineRegex, '')
+  return templateStringsArray.map((templateString) =>
+    templateString.replace(/\/\*[\s\S]*?\*\//g, '')
   );
-
-  return cleanedArray;
 }
 
 export function interpolateProps(value, props) {
@@ -34,7 +25,7 @@ export function formatCSSBlocks(css, className) {
     .replaceAll('&', `.${className}`)
     .trim();
 
-  return `.${className} { ${mainBlock} }\n${subBlocks}`;
+  return `.${className} { ${mainBlock} }\n${subBlocks}`
 }
 
 function normalizeCSS(css) {
