@@ -1,7 +1,12 @@
-import React from "react";
-import { cache } from "./components/StyleRegistry";
-import { areObjectsEqual } from "./utils";
-import { removeCSSComments } from "./helpers";
+import React from 'react';
+import { cache } from './components/StyleRegistry';
+import { areObjectsEqual } from './utils';
+import {
+  removeCSSComments,
+  interpolateProps,
+  formatCSSBlocks,
+  findExistingStyle,
+} from './helpers';
 
 /**
  * @typedef {(css: TemplateStringsArray) => React.FunctionComponent<React.HTMLProps<HTMLElement>>} StyledFunction
@@ -22,78 +27,48 @@ const styled = new Proxy(
       return function StyledComponent(props) {
         const collectedStyles = cache();
 
-        const id = React.useId().replace(/:/g, "");
+        const id = React.useId().replace(/:/g, '');
         const generatedClassName = `styled-${id}`;
 
         const { className: propsClassName, children, ...restProps } = props;
 
         const cleanedCSS = removeCSSComments(templateStrings);
 
-        const generatedCSS = cleanedCSS.reduce((acc, current, i) => {
-          const value = interpolatedProps[i];
-          const interpolatedValue =
-            (typeof value === "function" ? value?.(props) : value) || "";
+        const interpolatedCSS = cleanedCSS.reduce(
+          (acc, current, i) =>
+            acc + current + interpolateProps(interpolatedProps[i], props),
+          ''
+        );
 
-          if (
-            typeof interpolatedValue === "object" &&
-            interpolatedValue?.props?.className
-          ) {
-            return acc + current + "." + interpolatedValue?.props?.className;
+        const matchedStyle = findExistingStyle(
+          collectedStyles,
+          interpolatedCSS
+        );
+
+        const hasParentComponent = typeof Tag === 'function';
+
+        // If tag is another styled-component, we need to get that className in order to use it from the child.
+        const parentClassName = hasParentComponent
+          ? Tag(props)?.props?.className
+          : '';
+
+        // If there's no parentClassName, that space gets removed when trimmed
+        const fullClassName = `${parentClassName} ${generatedClassName}`.trim();
+
+        if (matchedStyle) {
+          // If they have the same styles and props, just use the same full class name (parent className + )
+          if (areObjectsEqual(matchedStyle.props, restProps)) {
+            return <Tag className={matchedStyle.fullClassName} {...props} />;
           }
 
-          return acc + current + interpolatedValue;
-        }, "");
+          // If they have the same styles but different props, use the current parent class name, and the matched style one
+          const className =
+            `${parentClassName} ${matchedStyle.className}`.trim();
 
-        const regex = /&[^{]+{[^}]*}/g;
-        const stringWithoutMatches = generatedCSS.replace(regex, "").trim();
-
-        const matches = (generatedCSS.match(regex) || [])
-          .join("\n")
-          .replaceAll("&", "." + generatedClassName)
-          .trim();
-
-        const normalizeCSS = (css) =>
-          css
-            .replace(/\s+/g, " ") // Reemplaza cualquier secuencia de espacios en blanco con un solo espacio
-            .trim(); // Elimina espacios al inicio y al final
-
-        const currentStyle = collectedStyles.find(({ css }) => {
-          const regex = /{\s*([^}]*)\s*}/;
-
-          // Buscar coincidencias en el string CSS
-          const match = css.match(regex);
-
-          // Extraer el contenido entre llaves si se encontró una coincidencia
-          const content = match ? match[1] : "";
-
-          const css1 = normalizeCSS(content);
-          const css2 = normalizeCSS(generatedCSS);
-
-          return css1 === css2;
-        });
-
-        const finalCSS =
-          `.${generatedClassName} { ${stringWithoutMatches} }` +
-          (!!matches ? `\n${matches}` : "");
-
-        const parentClassName =
-          typeof Tag === "function" ? Tag(props)?.props?.className : undefined;
-
-        const fullClassName = parentClassName
-          ? `${parentClassName} ${generatedClassName}`
-          : generatedClassName;
-
-        if (currentStyle) {
-          // If they have the same styles and props, just use the same full class name
-          if (areObjectsEqual(currentStyle.props, restProps))
-            return <Tag className={currentStyle.fullClassName} {...props} />;
-
-          // If they have the same styles but different props, use the parent class name, and the current style one
-          const className = parentClassName
-            ? `${parentClassName} ${currentStyle.className}`
-            : currentStyle.className;
           return <Tag className={className} {...props} />;
         }
+
+        const finalCSS = formatCSSBlocks(interpolatedCSS, generatedClassName);
 
         collectedStyles.push({
           fullClassName,
@@ -109,7 +84,7 @@ const styled = new Proxy(
   {
     get: function (target, prop) {
       // Intercepting property access on the `styled` function.
-      if (typeof prop === "string") {
+      if (typeof prop === 'string') {
         // If the property is a string, call the original `styled` function with the property name as the tag.
         return target(prop);
       }
